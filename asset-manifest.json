@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/imtools/static/css/main.073c9b0a.css",
-    "main.js": "/imtools/static/js/main.cae273bc.js",
+    "main.js": "/imtools/static/js/main.87c83b62.js",
     "static/js/787.ec433a91.chunk.js": "/imtools/static/js/787.ec433a91.chunk.js",
     "index.html": "/imtools/index.html",
     "main.073c9b0a.css.map": "/imtools/static/css/main.073c9b0a.css.map",
-    "main.cae273bc.js.map": "/imtools/static/js/main.cae273bc.js.map",
+    "main.87c83b62.js.map": "/imtools/static/js/main.87c83b62.js.map",
     "787.ec433a91.chunk.js.map": "/imtools/static/js/787.ec433a91.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.073c9b0a.css",
-    "static/js/main.cae273bc.js"
+    "static/js/main.87c83b62.js"
   ]
 }
