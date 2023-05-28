@@ -1,24 +1,13 @@
 import './App.css';
+import { useState } from "react";
+import { AiFillEdit } from "react-icons/ai";
+import * as XLSX from "xlsx";
 
-export default function App() {
-  function handleSubmit(e) {
-    // Prevent the browser from reloading the page
-    e.preventDefault();
+const NUMBER_OF_COLUMNS = 6;
 
-    // Read the form data
-    const form = e.target;
-    const formData = new FormData(form);
-
-    // You can pass formData as a fetch body directly:
-    fetch('https://rccalam.pythonanywhere.com/', { method: form.method, body: formData });
-
-    // Or you can work with it as a plain object:
-    const formJson = Object.fromEntries(formData.entries());
-    console.log(formJson);
-  }
-
+function PatientInfo({patientInfo, setPatientInfo}) {
   return (
-    <form method="post" onSubmit={handleSubmit}>
+    <>
       <div>
         <label>
           Patient Information
@@ -26,14 +15,91 @@ export default function App() {
       </div>
       <div>
         <textarea
-          name="postContent"
-          rows={4}
-          cols={40}
+          rows={NUMBER_OF_COLUMNS}
+          cols={50}
+          value={patientInfo}
+          onChange={e => setPatientInfo(e.target.value)}
         />
       </div>
-      <hr />
-      <button type="submit">Generate</button>
-    </form>
+    </>
+  );
+}
+
+export default function App() {
+  const now = new Date();
+  const [patientInfo, setPatientInfo] = useState(now.toLocaleDateString());
+  const [patientList, setPatientList] = useState([]);
+  const [editState, setEditState] = useState(false);
+  const [editPatientIndex, setEditPatientIndex] = useState(0);
+
+  function handleEditButton(info, index) {
+    const patientListCopy = [...patientList];
+    patientListCopy.splice(index, 1);
+
+    setPatientInfo(info);
+    setPatientList(patientListCopy);
+    setEditPatientIndex(index);
+    setEditState(true);
+  }
+
+  function handleAddPatient() {
+    if(editState) {
+      const patientListCopy = [...patientList];
+      patientListCopy.splice(editPatientIndex, 0, patientInfo);
+      setPatientList(patientListCopy);
+    } else {
+      setPatientList([...patientList, patientInfo]);
+    }
+
+    setPatientInfo(now.toLocaleDateString());
+    setEditState(false);
+  }
+
+  const parsedPatientInfo = patientList.map((info, index) => {
+    let lines = info.split("\n").map(line =>
+      <td key={line}>{line}</td>
+    );
+
+    const numberOfLines = lines.length;
+
+    if(numberOfLines < NUMBER_OF_COLUMNS) {
+      for(let i = numberOfLines; i < NUMBER_OF_COLUMNS; i++) {
+        lines.push(<td key={i}></td>);
+      }
+    }
+
+    return (
+      <tr key={info}>
+        {lines}
+        <td>
+          <button onClick={() => handleEditButton(info, index)}>
+            <AiFillEdit />
+          </button>
+        </td>
+      </tr>
+    );
+  });
+
+  return (
+    <>
+      <PatientInfo patientInfo={patientInfo} setPatientInfo={setPatientInfo}/>
+      <button onClick={handleAddPatient}>Add Patient</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Age/Sex</th>
+            <th>Chief Complaint</th>
+            <th>Diagnosis</th>
+            <th>Disposition</th>
+          </tr>
+        </thead>
+        <tbody>
+          {parsedPatientInfo}
+        </tbody>
+      </table>
+    </>
   );
 }
 
