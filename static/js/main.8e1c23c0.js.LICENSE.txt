@@ -1,6 +1,6 @@
-/*! sheetjs (C) 2013-present SheetJS -- http://sheetjs.com */
+/*! js-cookie v3.0.5 | MIT */
 
-/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
+/*! sheetjs (C) 2013-present SheetJS -- http://sheetjs.com */
 
 /**
  * @license React
