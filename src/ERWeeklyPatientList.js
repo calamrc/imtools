@@ -161,7 +161,7 @@ export default function ERWeeklyPatientList() {
   });
 
   return (
-    <div className="container">
+    <>
       <div className="row">
         <div className="col">
           <h1>
@@ -231,7 +231,7 @@ export default function ERWeeklyPatientList() {
         </div>
       </>
       }
-    </div>
+    </>
   );
 }
 
