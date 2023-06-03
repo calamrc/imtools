@@ -1,7 +1,18 @@
 import './ERWeeklyPatientList.css';
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import {
+  PlusCircleIcon,
+  IssueClosedIcon,
+  XCircleIcon,
+  DownloadIcon,
+} from "@primer/octicons-react"
 import * as XLSX from "xlsx";
+import Container from "react-bootstrap/Container";
+import Table from "react-bootstrap/Table";
+import InputGroup from "react-bootstrap/InputGroup";
+import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
 
 const NUMBER_OF_COLUMNS = 6;
 const HEADERS = [
@@ -15,7 +26,8 @@ const HEADERS = [
 
 export default function ERWeeklyPatientList() {
   const now = new Date();
-  const [patientInfo, setPatientInfo] = useState(now.toLocaleDateString());
+  const offset = 270;
+
   const [patientList, setPatientList] = useState(() => {
     const cookie = Cookies.get("patientList");
     if(cookie === undefined) {
@@ -24,29 +36,35 @@ export default function ERWeeklyPatientList() {
       return JSON.parse(cookie);
     }
   });
-  const [editState, setEditState] = useState(false);
-  const [editPatientIndex, setEditPatientIndex] = useState(0);
+
+  const [patientInfo, setPatientInfo] = useState(now.toLocaleDateString());
+  const [editState, setEditState] = useState(0);
+  const [editPatientIndex, setEditPatientIndex] = useState(patientList.length-1);
   const [addPatientLabel, setAddPatientLabel] = useState("Add Patient to List");
-  const [title, setTitle] = useState("IM Tools")
   const [filename, setFilename] = useState("ERWeeklyPatientList-" + now.toJSON().slice(0, 10));
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleteLabel, setDeleteLabel] = useState("Delete Table");
+  /* const [deleteLabel, setDeleteLabel] = useState("Delete Table"); */
+  const [tableHeight, setTableHeight] = useState((window.innerHeight-offset).toString() + "px");
 
   useEffect(() => {
-    document.title = title;
-  }, [title]);
-
-  function handleDeleteTable() {
-    if(confirmDelete) {
-      Cookies.remove("patientList");
-      setPatientList([]);
-      setDeleteLabel("Delete Table")
-      setConfirmDelete(false);
-    } else {
-      setDeleteLabel("Confirm Delete")
-      setConfirmDelete(true);
+    function handleResize() {
+      setTableHeight((window.innerHeight-offset).toString() + "px");
     }
-  }
+    window.addEventListener("resize", handleResize)
+  });
+
+  /* function handleDeleteTable() {
+   *   if(confirmDelete) {
+   *     Cookies.remove("patientList");
+   *     setPatientList([]);
+   *     setDeleteLabel("Delete Table")
+   *     setConfirmDelete(false);
+   *     setAddPatientLabel("Add Patient to List");
+   *   } else {
+   *     setDeleteLabel("Confirm Delete")
+   *     setConfirmDelete(true);
+   *   }
+   * } */
 
   function handleInfoChange(value) {
     if(editState) {
@@ -63,10 +81,20 @@ export default function ERWeeklyPatientList() {
   }
 
   function handleEditButton(info, index) {
-    setPatientInfo(info.trim());
-    setEditPatientIndex(index);
-    setEditState(true);
-    setAddPatientLabel("Save Edits");
+    if(editState === 0 || index !== editPatientIndex) {
+      setEditState(1);
+      setPatientInfo(info.trim());
+      setEditPatientIndex(index);
+      setAddPatientLabel("Save Edits");
+    } else if(editState === 1) {
+      setEditState(2);
+      setPatientInfo("");
+      setEditPatientIndex(index);
+      setAddPatientLabel("Delete Patient Info");
+    } else {
+      setEditState(0);
+      setAddPatientLabel("Add Patient to List");
+    }
   }
 
   function handleAddPatient() {
@@ -75,34 +103,32 @@ export default function ERWeeklyPatientList() {
     patientInfoCopy = patientInfoCopy.trim();
 
     let patientListCopy;
+    const lines = patientInfoCopy.split("\n");
 
-    if(patientInfoCopy !== "") {
-      const lines = patientInfoCopy.split("\n");
+    for(let i = lines.length; i < NUMBER_OF_COLUMNS; i++) {
+      patientInfoCopy += "\n";
+    }
 
-      for(let i = lines.length; i < NUMBER_OF_COLUMNS; i++) {
-        patientInfoCopy += "\n";
-      }
-
-      if(editState) {
-        patientListCopy = [...patientList];
-        patientListCopy.splice(editPatientIndex, 1, patientInfoCopy);
-      } else {
-        patientListCopy = [...patientList, patientInfoCopy];
-      }
-
-    } else {
+    if(editState === 0 && patientInfoCopy.trim() !== "") {
+      patientListCopy = [...patientList, patientInfoCopy];
+    } else if(editState === 1) {
+      patientListCopy = [...patientList];
+      patientListCopy.splice(editPatientIndex, 1, patientInfoCopy);
+    } else if(editState === 2) {
       patientListCopy = [...patientList];
       patientListCopy.splice(editPatientIndex, 1);
+    } else{
+      patientListCopy = [...patientList];
     }
 
     Cookies.set("patientList", JSON.stringify(patientListCopy), {
-      expires: 7, path: ""
+      expires: 30, path: ""
     });
 
     setPatientList(patientListCopy);
     setPatientInfo(now.toLocaleDateString());
-    setEditState(false);
-    setAddPatientLabel("Add Patient to List");
+    setEditState(0);
+    setEditPatientIndex(patientListCopy.length-1)
   }
 
   function handleSaveTable() {
@@ -162,76 +188,59 @@ export default function ERWeeklyPatientList() {
 
   return (
     <>
-      <div className="row">
-        <div className="col">
-          <h1>
-            ER Weekly Patient List
-          </h1>
+      <Container>
+        <div className="table-wrap" style={{height: tableHeight}}>
+          <Table hover responsive className="mt-3 mb-3">
+            <thead className="thead-light">
+              <tr>
+                {headers}
+              </tr>
+            </thead>
+            <tbody>
+              {patientListColumns}
+            </tbody>
+          </Table>
         </div>
-      </div>
-      <div className="row">
-        <div className="col">
-          <textarea className="form-control"
-            rows={NUMBER_OF_COLUMNS}
-            cols={50}
-            value={patientInfo}
-            onChange={e => handleInfoChange(e.target.value)}
-          />
-        </div>
-      </div>
-      <div className="row justify-content-between mt-2">
-        <div className="col-auto mr-auto">
-          <button className="btn btn-primary" onClick={() => handleAddPatient()}>
-            {addPatientLabel}
-          </button>
-        </div>
-        <div className="col-auto">
-          <button className="btn btn-primary" onClick={() => handleInfoChange("")}>
-            Clear Text
-          </button>
-        </div>
-      </div>
-      {(patientList.length > 0) && 
-      <>
-        <div className="row mt-4">
-          <div className="col">
-            <div className="table-responsive-xl">
-              <table className="table">
-                <thead className="thead-dark">
-                  <tr>
-                    {headers}
-                  </tr>
-                </thead>
-                <tbody>
-                  {patientListColumns}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div className="row mt-2">
-          <div className="col-auto mb-2">
-            <button className="btn btn-primary" onClick={() => handleSaveTable()}>
-              Download Excel File
-            </button>
-          </div>
-          <div className="col-auto mr-auto mb-2">
-            <div className="input-group">
-              <input type="text" className="form-control" placeholder="Filename" value={filename} onChange={e => setFilename(e.target.value)} />
-              <div className="input-group-append">
-                <span className="input-group-text">.xlsx</span>
-              </div>
-            </div>
-          </div>
-          <div className="col-auto mb-2">
-            <button className="btn btn-danger" onClick={() => handleDeleteTable()}>
-              {deleteLabel}
-            </button>
-          </div>
-        </div>
-      </>
-      }
+      </Container>
+      <footer className="footer">
+        <Container>
+          <InputGroup className="mb-2">
+            <InputGroup.Text>Patients: {editPatientIndex+1}/{patientList.length}</InputGroup.Text>
+            <Form.Control
+              placeholder="Filename"
+              value={filename}
+              onChange={e => setFilename(e.target.value)}
+            />
+            <InputGroup.Text>.xlsx</InputGroup.Text>
+            <Button variant="secondary" onClick={() => handleSaveTable()}>
+              <DownloadIcon size={24} />
+            </Button>
+          </InputGroup>
+          <InputGroup>
+            <Form.Control
+              as="textarea"
+              rows={NUMBER_OF_COLUMNS}
+              value={patientInfo}
+              onChange={e => handleInfoChange(e.target.value)}
+            />
+            {editState === 0 &&
+              <Button variant="secondary"  onClick={() => handleAddPatient()}>
+                <PlusCircleIcon size={24} />
+              </Button>
+            }
+            {editState === 1 &&
+              <Button variant="success"  onClick={() => handleAddPatient()}>
+                <IssueClosedIcon size={24} />
+              </Button>
+            }
+            {editState === 2 &&
+              <Button variant="danger"  onClick={() => handleAddPatient()}>
+                <XCircleIcon size={24} />
+              </Button>
+            }
+          </InputGroup>
+        </Container>
+      </footer>
     </>
   );
 }
-
