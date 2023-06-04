@@ -1,11 +1,9 @@
 import './App.css';
-import { useState } from "react";
+import React, { useState } from "react";
 import ERWeeklyPatientList from "./ERWeeklyPatientList";
-import { ThreeBarsIcon } from "@primer/octicons-react";
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
-import NavDropdown from "react-bootstrap/NavDropdown";
 
 export default function App() {
   const [brand, setBrand] = useState("Home")
@@ -18,27 +16,28 @@ export default function App() {
   },  {
     name: "ER Weekly Patient List",
     setter: setShowWeeklyPatientList,
-  }
-  ];
+  }];
 
-  function setItemActive(index) {
+  const setItemActive = (index) => {
     itemList.map((item, i) => {
-      if(index == i) {
+      if(index === i) {
         setBrand(item.name)
         item.setter(true);
       } else {
         item.setter(false);
       }
+
+      return item;
     });
   }
 
   return (
     <>
       <header>
-        <Navbar bg="dark" variant="dark" expand="lg" sticky="top">
+        <Navbar bg="dark" variant="dark" expand="lg" sticky="top" collapseOnSelect>
           <Container>
-            <Navbar.Brand href="#">{brand}</Navbar.Brand>
             <Navbar.Toggle />
+            <Navbar.Brand href="#">{brand}</Navbar.Brand>
             <Navbar.Collapse id="basic-navbar-nav">
               <Nav className="me-auto">
                 <Nav.Link href="#" onClick={() => setItemActive(0)}>{itemList[0].name}</Nav.Link>
