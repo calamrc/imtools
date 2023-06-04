@@ -7,6 +7,7 @@ import {
   XCircleIcon,
   DownloadIcon,
   KebabHorizontalIcon,
+  FileIcon,
 } from "@primer/octicons-react"
 import * as XLSX from "xlsx";
 import Container from "react-bootstrap/Container";
@@ -18,6 +19,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Modal from "react-bootstrap/Modal";
+import ListGroup from "react-bootstrap/ListGroup";
 
 const NUMBER_OF_COLUMNS = 6;
 const HEADERS = [
@@ -41,6 +43,16 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   </Button>
 ));
 
+const setCookie = (name, value) => {
+  Cookies.set(name, value, {
+    expires: 30,
+    path: ""
+  });
+}
+
+const getCookie = (name) => {
+  return Cookies.get(name);
+}
 
 const ERWeeklyPatientList = () => {
   const tablePrefix = "table-";
@@ -54,35 +66,59 @@ const ERWeeklyPatientList = () => {
     window.addEventListener("resize", handleResize)
   });
 
-  const now = new Date();
+  const date = new Date();
   const currentDate = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(now);
-  const defaultTableName = "ERPatientList-" + currentDate.replaceAll("/", "");
+  }).format(date);
+  const defaultTableName = "ERPatientList";
   const [tableName, setTableName] = useState(defaultTableName);
 
-  const [patientList, setPatientList] = useState(() => {
-    const lastOpenedTable = Cookies.get("lastOpenedTable");
-    const tableContent = Cookies.get(tablePrefix + lastOpenedTable, {
-      path: "",
-    });
+  const getPatientList = (tableName) => {
+    const tableContent = getCookie(tablePrefix + tableName);
 
     if(tableContent === undefined) {
-      setTableName(defaultTableName);
-      Cookies.set("lastOpenedTable", defaultTableName, {
-        expires: 30,
-        path: "",
-      });
       return [];
     } else {
-      setTableName(lastOpenedTable);
       return JSON.parse(tableContent);
     }
-  });
+  }
 
-  const [patientInfo, setPatientInfo] = useState(now.toLocaleDateString());
+  const getTableList = () => {
+    const tableList = getCookie("tableList");
+
+    if(tableList === undefined) {
+      setCookie("tableList", JSON.stringify([defaultTableName]));
+      return [defaultTableName];
+    } else {
+      return JSON.parse(tableList);
+    }
+  }
+
+  const getLastOpenedTable = () => {
+    const lastOpenedTable = getCookie("lastOpenedTable");
+    console.log(lastOpenedTable);
+
+    if(lastOpenedTable === undefined) {
+      setTableName(defaultTableName);
+      setCookie("lastOpenedTable", defaultTableName);
+      return defaultTableName;
+    } else {
+      setTableName(lastOpenedTable);
+      return lastOpenedTable;
+    }
+  }
+
+  const [patientList, setPatientList] = useState(() => {
+    const lastOpenedTable = getLastOpenedTable(); 
+    const patientList = getPatientList(lastOpenedTable); 
+    return patientList;
+  });
+  const [tableList, setTableList] = useState(getTableList());
+
+
+  const [patientInfo, setPatientInfo] = useState(currentDate);
   const [editState, setEditState] = useState(0);
   const [editPatientIndex, setEditPatientIndex] = useState(patientList.length-1);
   const [addPatientLabel, setAddPatientLabel] = useState("Add Patient to List");
@@ -120,14 +156,35 @@ const ERWeeklyPatientList = () => {
   ];
 
 
+  const [tableNameInvalid, setTableNameInvalid] = useState(false);
+  const [tableNameInvalidFeedback, setTableNameInvalidFeedback] = useState("");
+
   const handleNewTable = () => {
+    setTableNameInvalid(false);
+
+    if(tableName.trim() === "") {
+      setTableNameInvalidFeedback("Table name can't be empty.");
+      setTableNameInvalid(true);
+      return;
+    }
+
+    if(tableList.includes(tableName)) {
+      setTableNameInvalidFeedback("Table name already exists.");
+      setTableNameInvalid(true);
+      return;
+    }
+
+    setTableNameInvalid(false);
+
     setPatientList([]);
     setEditState(0);
     setEditPatientIndex(-1);
-  }
 
-  const handleOpenTable = () => {
+    setTableList([...tableList, tableName])
+    setCookie("tableList", JSON.stringify([...tableList, tableName]));
+    setCookie("lastOpenedTable", tableName);
 
+    setShowModal(false);
   }
 
   const handleSaveTable = () => {
@@ -155,13 +212,6 @@ const ERWeeklyPatientList = () => {
 
   const handleDeleteTable = () => {
 
-  }
-
-  const saveTableToCookie = (table) => {
-    Cookies.set(tablePrefix + tableName, JSON.stringify(table), {
-      expires: 30,
-      path: ""
-    });
   }
 
   const handleInfoChange = (value) => {
@@ -219,9 +269,10 @@ const ERWeeklyPatientList = () => {
       patientListCopy = [...patientList];
     }
 
-    saveTableToCookie(patientListCopy);
+    setCookie(tablePrefix + tableName, JSON.stringify(patientListCopy));
+    setCookie("lastOpenedTable", tableName);
     setPatientList(patientListCopy);
-    setPatientInfo(now.toLocaleDateString());
+    setPatientInfo(currentDate);
     setEditState(0);
     setEditPatientIndex(patientListCopy.length-1)
   }
@@ -241,6 +292,19 @@ const ERWeeklyPatientList = () => {
         return it;
       });
     }}>{item.name}</Dropdown.Item>
+  );
+
+  const tableListItem = tableList.map((tableName, index) =>  {
+    return <ListGroup.Item key={index} action onClick={() => {
+      setTableName(tableName);
+      setPatientList(getPatientList(tableName));
+      setCookie("lastOpenedTable", tableName);
+      setShowModal(false);
+    }}
+    >
+      {tableName}
+    </ListGroup.Item>
+  }
   );
 
   const headers = HEADERS.map((header, index) =>
@@ -304,12 +368,35 @@ const ERWeeklyPatientList = () => {
                 </Button>
               </InputGroup>
           }
+          {
+            showNewDialog &&
+              <InputGroup hasValidation className="mb-2">
+                <Form.Control
+                  isInvalid={tableNameInvalid}
+                  placeholder="Table name"
+                  value={tableName}
+                  onChange={e => setTableName(e.target.value)}
+                />
+                <Form.Control.Feedback type="invalid" tooltip>
+                  {tableNameInvalidFeedback}
+                </Form.Control.Feedback>
+                <Button variant="primary" onClick={() => handleNewTable()}>
+                  <FileIcon size={24} />
+                </Button>
+              </InputGroup>
+          }
+          {
+            showOpenDialog &&
+              <ListGroup>
+                {tableListItem}
+              </ListGroup>
+          }
         </Modal.Body>
       </Modal>
       <Container>
         <Row className="mt-1 justify-content-between align-items-center">
           <Col className="fw-light">
-            <span className="align-middle">{editPatientIndex+1}/{patientList.length}</span>
+            <span className="align-middle bg-transparent">{editPatientIndex+1}/{patientList.length}</span>
           </Col>
           <Col xs="auto" className="fw-semibold">
             <span className="align-middle">{tableName}</span>
@@ -325,18 +412,22 @@ const ERWeeklyPatientList = () => {
             </Dropdown>
           </Col>
         </Row>
-        <div className="table-wrap" style={{height: tableHeight}}>
-          <Table hover responsive className="mt-3 mb-3">
-            <thead className="thead-dark">
-              <tr>
-                {headers}
-              </tr>
-            </thead>
-            <tbody>
-              {patientListColumns}
-            </tbody>
-          </Table>
-        </div>
+        <Row>
+          <Col>
+            <div className="table-wrap" style={{height: tableHeight}}>
+              <Table hover responsive className="mt-3 mb-3">
+                <thead className="thead-dark">
+                  <tr>
+                    {headers}
+                  </tr>
+                </thead>
+                <tbody>
+                  {patientListColumns}
+                </tbody>
+              </Table>
+            </div>
+          </Col>
+        </Row>>
       </Container>
       <footer className="footer" style={{height: tableHeight+50}}>
         <Container>
