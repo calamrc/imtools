@@ -1,4 +1,4 @@
-import './ERWeeklyPatientList.css';
+import "./ERWeeklyPatientList.css";
 import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import {
@@ -8,7 +8,7 @@ import {
   DownloadIcon,
   KebabHorizontalIcon,
   FileIcon,
-} from "@primer/octicons-react"
+} from "@primer/octicons-react";
 import * as XLSX from "xlsx";
 import Container from "react-bootstrap/Container";
 import Table from "react-bootstrap/Table";
@@ -28,8 +28,8 @@ const HEADERS = [
   "Age/Sex",
   "Chief Complaint",
   "Diagnosis",
-  "Disposition"
-]
+  "Disposition",
+];
 
 const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   <Button
@@ -38,7 +38,8 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
     onClick={(e) => {
       e.preventDefault();
       onClick(e);
-    }}>
+    }}
+  >
     {children}
   </Button>
 ));
@@ -46,24 +47,26 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
 const setCookie = (name, value) => {
   Cookies.set(name, value, {
     expires: 30,
-    path: ""
+    path: "",
   });
-}
+};
 
 const getCookie = (name) => {
   return Cookies.get(name);
-}
+};
 
 const ERWeeklyPatientList = () => {
   const tablePrefix = "table-";
   const offset = 160 + 100;
-  const [tableHeight, setTableHeight] = useState((window.innerHeight-offset).toString() + "px");
+  const [tableHeight, setTableHeight] = useState(
+    (window.innerHeight - offset).toString() + "px",
+  );
 
   useEffect(() => {
     const handleResize = () => {
-      setTableHeight((window.innerHeight-offset).toString() + "px");
-    }
-    window.addEventListener("resize", handleResize)
+      setTableHeight((window.innerHeight - offset).toString() + "px");
+    };
+    window.addEventListener("resize", handleResize);
   });
 
   const date = new Date();
@@ -78,29 +81,29 @@ const ERWeeklyPatientList = () => {
   const getPatientList = (tableName) => {
     const tableContent = getCookie(tablePrefix + tableName);
 
-    if(tableContent === undefined) {
+    if (tableContent === undefined) {
       return [];
     } else {
       return JSON.parse(tableContent);
     }
-  }
+  };
 
   const getTableList = () => {
     const tableList = getCookie("tableList");
 
-    if(tableList === undefined) {
+    if (tableList === undefined) {
       setCookie("tableList", JSON.stringify([defaultTableName]));
       return [defaultTableName];
     } else {
       return JSON.parse(tableList);
     }
-  }
+  };
 
   const getLastOpenedTable = () => {
     const lastOpenedTable = getCookie("lastOpenedTable");
     console.log(lastOpenedTable);
 
-    if(lastOpenedTable === undefined) {
+    if (lastOpenedTable === undefined) {
       setTableName(defaultTableName);
       setCookie("lastOpenedTable", defaultTableName);
       return defaultTableName;
@@ -108,19 +111,20 @@ const ERWeeklyPatientList = () => {
       setTableName(lastOpenedTable);
       return lastOpenedTable;
     }
-  }
+  };
 
   const [patientList, setPatientList] = useState(() => {
-    const lastOpenedTable = getLastOpenedTable(); 
-    const patientList = getPatientList(lastOpenedTable); 
+    const lastOpenedTable = getLastOpenedTable();
+    const patientList = getPatientList(lastOpenedTable);
     return patientList;
   });
   const [tableList, setTableList] = useState(getTableList());
 
-
   const [patientInfo, setPatientInfo] = useState(currentDate);
   const [editState, setEditState] = useState(0);
-  const [editPatientIndex, setEditPatientIndex] = useState(patientList.length-1);
+  const [editPatientIndex, setEditPatientIndex] = useState(
+    patientList.length - 1,
+  );
   const [addPatientLabel, setAddPatientLabel] = useState("Add Patient to List");
 
   const [modalTitle, setModalTitle] = useState("");
@@ -155,20 +159,19 @@ const ERWeeklyPatientList = () => {
     },
   ];
 
-
   const [tableNameInvalid, setTableNameInvalid] = useState(false);
   const [tableNameInvalidFeedback, setTableNameInvalidFeedback] = useState("");
 
   const handleNewTable = () => {
     setTableNameInvalid(false);
 
-    if(tableName.trim() === "") {
+    if (tableName.trim() === "") {
       setTableNameInvalidFeedback("Table name can't be empty.");
       setTableNameInvalid(true);
       return;
     }
 
-    if(tableList.includes(tableName)) {
+    if (tableList.includes(tableName)) {
       setTableNameInvalidFeedback("Table name already exists.");
       setTableNameInvalid(true);
       return;
@@ -180,19 +183,19 @@ const ERWeeklyPatientList = () => {
     setEditState(0);
     setEditPatientIndex(-1);
 
-    setTableList([...tableList, tableName])
+    setTableList([...tableList, tableName]);
     setCookie("tableList", JSON.stringify([...tableList, tableName]));
     setCookie("lastOpenedTable", tableName);
 
     setShowModal(false);
-  }
+  };
 
   const handleSaveTable = () => {
     const data = patientList.map((info, index) => {
       let dict = {};
       const lines = info.split("\n");
 
-      for(let i = 0; i < NUMBER_OF_COLUMNS; i++) {
+      for (let i = 0; i < NUMBER_OF_COLUMNS; i++) {
         dict[HEADERS.at(i)] = lines.at(i);
       }
 
@@ -204,37 +207,35 @@ const ERWeeklyPatientList = () => {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, "ER Weekly Patient List");
     XLSX.writeFile(workbook, tableName + ".xlsx", {
-      compression: true
+      compression: true,
     });
 
     setShowModal(false);
-  }
+  };
 
-  const handleDeleteTable = () => {
-
-  }
+  const handleDeleteTable = () => {};
 
   const handleInfoChange = (value) => {
-    if(editState) {
-      if(value.trim() === "") {
+    if (editState) {
+      if (value.trim() === "") {
         setAddPatientLabel("Delete Patient Info");
       } else {
         setAddPatientLabel("Save Edits");
-      } 
+      }
     } else {
       setAddPatientLabel("Add Patient to List");
     }
 
     setPatientInfo(value);
-  }
+  };
 
   const handleEditButton = (info, index) => {
-    if(editState === 0 || index !== editPatientIndex) {
+    if (editState === 0 || index !== editPatientIndex) {
       setEditState(1);
       setPatientInfo(info.trim());
       setEditPatientIndex(index);
       setAddPatientLabel("Save Edits");
-    } else if(editState === 1) {
+    } else if (editState === 1) {
       setEditState(2);
       setPatientInfo("");
       setEditPatientIndex(index);
@@ -243,7 +244,7 @@ const ERWeeklyPatientList = () => {
       setEditState(0);
       setAddPatientLabel("Add Patient to List");
     }
-  }
+  };
 
   const handleAddPatient = () => {
     let patientInfoCopy = patientInfo;
@@ -253,19 +254,19 @@ const ERWeeklyPatientList = () => {
     let patientListCopy;
     const lines = patientInfoCopy.split("\n");
 
-    for(let i = lines.length; i < NUMBER_OF_COLUMNS; i++) {
+    for (let i = lines.length; i < NUMBER_OF_COLUMNS; i++) {
       patientInfoCopy += "\n";
     }
 
-    if(editState === 0 && patientInfoCopy.trim() !== "") {
+    if (editState === 0 && patientInfoCopy.trim() !== "") {
       patientListCopy = [...patientList, patientInfoCopy];
-    } else if(editState === 1) {
+    } else if (editState === 1) {
       patientListCopy = [...patientList];
       patientListCopy.splice(editPatientIndex, 1, patientInfoCopy);
-    } else if(editState === 2) {
+    } else if (editState === 2) {
       patientListCopy = [...patientList];
       patientListCopy.splice(editPatientIndex, 1);
-    } else{
+    } else {
       patientListCopy = [...patientList];
     }
 
@@ -274,60 +275,74 @@ const ERWeeklyPatientList = () => {
     setPatientList(patientListCopy);
     setPatientInfo(currentDate);
     setEditState(0);
-    setEditPatientIndex(patientListCopy.length-1)
-  }
+    setEditPatientIndex(patientListCopy.length - 1);
+  };
 
-  const generateDropdownItems = dropdownItems.map((item, index, items) => 
-    <Dropdown.Item key={index} href="#" onClick={(e) => {
-      setModalTitle(item.name + " table...");
-      setShowModal(true);
+  const generateDropdownItems = dropdownItems.map((item, index, items) => (
+    <Dropdown.Item
+      key={index}
+      href="#"
+      onClick={(e) => {
+        setModalTitle(item.name + " table...");
+        setShowModal(true);
 
-      items.map(it => {
-        if(e.target.text === it.name) {
-          it.callback(true);
-        } else {
-          it.callback(false);
-        }
+        items.map((it) => {
+          if (e.target.text === it.name) {
+            it.callback(true);
+          } else {
+            it.callback(false);
+          }
 
-        return it;
-      });
-    }}>{item.name}</Dropdown.Item>
-  );
-
-  const tableListItem = tableList.map((tableName, index) =>  {
-    return <ListGroup.Item key={index} action onClick={() => {
-      setTableName(tableName);
-      setPatientList(getPatientList(tableName));
-      setCookie("lastOpenedTable", tableName);
-      setShowModal(false);
-    }}
+          return it;
+        });
+      }}
     >
-      {tableName}
-    </ListGroup.Item>
-  }
-  );
+      {item.name}
+    </Dropdown.Item>
+  ));
 
-  const headers = HEADERS.map((header, index) =>
-    <th key={index}>{header}</th>
-  );
+  const tableListItem = tableList.map((tableName, index) => {
+    return (
+      <ListGroup.Item
+        key={index}
+        action
+        onClick={() => {
+          setTableName(tableName);
+          setPatientList(getPatientList(tableName));
+          setCookie("lastOpenedTable", tableName);
+          setShowModal(false);
+        }}
+      >
+        {tableName}
+      </ListGroup.Item>
+    );
+  });
+
+  const headers = HEADERS.map((header, index) => <th key={index}>{header}</th>);
 
   const patientListColumns = patientList.map((info, index) => {
     const lines = info.split("\n");
 
-    const columns = lines.map((line, index) =>
-      <td key={index}>{line}</td>
-    );
+    const columns = lines.map((line, index) => <td key={index}>{line}</td>);
 
-    if(editState && editPatientIndex === index) {
-      if(addPatientLabel === "Save Edits") {
+    if (editState && editPatientIndex === index) {
+      if (addPatientLabel === "Save Edits") {
         return (
-          <tr key={index} className="table-success" onClick={() => handleEditButton(info, index)}>
+          <tr
+            key={index}
+            className="table-success"
+            onClick={() => handleEditButton(info, index)}
+          >
             {columns}
           </tr>
         );
       } else {
         return (
-          <tr key={index} className="table-danger" onClick={() => handleEditButton(info, index)}>
+          <tr
+            key={index}
+            className="table-danger"
+            onClick={() => handleEditButton(info, index)}
+          >
             {columns}
           </tr>
         );
@@ -349,54 +364,47 @@ const ERWeeklyPatientList = () => {
         dialogClassName="modal-90w"
       >
         <Modal.Header closeButton>
-          <Modal.Title>
-            {modalTitle}
-          </Modal.Title>
+          <Modal.Title>{modalTitle}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {
-            showSaveDialog &&
-              <InputGroup className="mb-2">
-                <Form.Control
-                  placeholder="Tablename"
-                  value={tableName}
-                  onChange={e => setTableName(e.target.value)}
-                />
-                <InputGroup.Text>.xlsx</InputGroup.Text>
-                <Button variant="primary" onClick={() => handleSaveTable(true)}>
-                  <DownloadIcon size={24} />
-                </Button>
-              </InputGroup>
-          }
-          {
-            showNewDialog &&
-              <InputGroup hasValidation className="mb-2">
-                <Form.Control
-                  isInvalid={tableNameInvalid}
-                  placeholder="Table name"
-                  value={tableName}
-                  onChange={e => setTableName(e.target.value)}
-                />
-                <Form.Control.Feedback type="invalid" tooltip>
-                  {tableNameInvalidFeedback}
-                </Form.Control.Feedback>
-                <Button variant="primary" onClick={() => handleNewTable()}>
-                  <FileIcon size={24} />
-                </Button>
-              </InputGroup>
-          }
-          {
-            showOpenDialog &&
-              <ListGroup>
-                {tableListItem}
-              </ListGroup>
-          }
+          {showSaveDialog && (
+            <InputGroup className="mb-2">
+              <Form.Control
+                placeholder="Tablename"
+                value={tableName}
+                onChange={(e) => setTableName(e.target.value)}
+              />
+              <InputGroup.Text>.xlsx</InputGroup.Text>
+              <Button variant="primary" onClick={() => handleSaveTable(true)}>
+                <DownloadIcon size={24} />
+              </Button>
+            </InputGroup>
+          )}
+          {showNewDialog && (
+            <InputGroup hasValidation className="mb-2">
+              <Form.Control
+                isInvalid={tableNameInvalid}
+                placeholder="Table name"
+                value={tableName}
+                onChange={(e) => setTableName(e.target.value)}
+              />
+              <Form.Control.Feedback type="invalid" tooltip>
+                {tableNameInvalidFeedback}
+              </Form.Control.Feedback>
+              <Button variant="primary" onClick={() => handleNewTable()}>
+                <FileIcon size={24} />
+              </Button>
+            </InputGroup>
+          )}
+          {showOpenDialog && <ListGroup>{tableListItem}</ListGroup>}
         </Modal.Body>
       </Modal>
       <Container>
         <Row className="mt-1 justify-content-between align-items-center">
           <Col className="fw-light">
-            <span className="align-middle bg-transparent">{editPatientIndex+1}/{patientList.length}</span>
+            <span className="align-middle bg-transparent">
+              {editPatientIndex + 1}/{patientList.length}
+            </span>
           </Col>
           <Col xs="auto" className="fw-semibold">
             <span className="align-middle">{tableName}</span>
@@ -406,58 +414,52 @@ const ERWeeklyPatientList = () => {
               <Dropdown.Toggle as={CustomToggle} variant="light">
                 <KebabHorizontalIcon className="dropdown-toggle" size={24} />
               </Dropdown.Toggle>
-              <Dropdown.Menu align="end">
-                {generateDropdownItems}
-              </Dropdown.Menu>
+              <Dropdown.Menu align="end">{generateDropdownItems}</Dropdown.Menu>
             </Dropdown>
           </Col>
         </Row>
         <Row>
           <Col>
-            <div className="table-wrap" style={{height: tableHeight}}>
+            <div className="table-wrap" style={{ height: tableHeight }}>
               <Table hover responsive className="mt-3 mb-3">
                 <thead className="thead-dark">
-                  <tr>
-                    {headers}
-                  </tr>
+                  <tr>{headers}</tr>
                 </thead>
-                <tbody>
-                  {patientListColumns}
-                </tbody>
+                <tbody>{patientListColumns}</tbody>
               </Table>
             </div>
           </Col>
-        </Row>>
+        </Row>
       </Container>
-      <footer className="footer" style={{height: tableHeight+50}}>
+      <footer className="footer" style={{ height: tableHeight + 50 }}>
         <Container>
           <InputGroup>
             <Form.Control
               as="textarea"
               rows={NUMBER_OF_COLUMNS}
               value={patientInfo}
-              onChange={e => handleInfoChange(e.target.value)}
+              onChange={(e) => handleInfoChange(e.target.value)}
             />
-            {editState === 0 &&
-              <Button variant="primary"  onClick={() => handleAddPatient()}>
+            {editState === 0 && (
+              <Button variant="primary" onClick={() => handleAddPatient()}>
                 <PlusCircleIcon size={24} />
               </Button>
-            }
-            {editState === 1 &&
-              <Button variant="success"  onClick={() => handleAddPatient()}>
+            )}
+            {editState === 1 && (
+              <Button variant="success" onClick={() => handleAddPatient()}>
                 <IssueClosedIcon size={24} />
               </Button>
-            }
-            {editState === 2 &&
-              <Button variant="danger"  onClick={() => handleAddPatient()}>
+            )}
+            {editState === 2 && (
+              <Button variant="danger" onClick={() => handleAddPatient()}>
                 <XCircleIcon size={24} />
               </Button>
-            }
+            )}
           </InputGroup>
         </Container>
       </footer>
     </>
   );
-}
+};
 
 export default ERWeeklyPatientList;
